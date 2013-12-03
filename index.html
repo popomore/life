@@ -2,6 +2,7 @@
 <meta charset="UTF-8">
 <title>Life</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="format-detection" content="telephone=no">
 <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Open+Sans:400,300">
 <style>
 *{
@@ -72,7 +73,6 @@ h1{
 	color: rgba(255,255,255,.5);
 }
 #life .event .time{
-	vertical-align: middle;
 	display: inline-block;
 	overflow: hidden;
 	height: 0;
@@ -99,11 +99,37 @@ h1{
 		$el: document.getElementById('life'),
 		yearLength: 120, // 120px per year
 		start: function(){
-			life.fetch(function(response){
-				var data = life.parse(response);
-				var title = life.parseTitle(response);
-				life.render(title, data);
+			life.loadConfig(function(config){
+				if (config.yearLength) life.yearLength = config.yearLength;
+				if (config.customStylesheetURL) life.injectStylesheet(config.customStylesheetURL);
+
+				life.fetch(function(response){
+					var data = life.parse(response);
+					var title = life.parseTitle(response);
+					life.render(title, data);
+				});
 			});
+		},
+		loadConfig: function(fn){
+			var xhr = new XMLHttpRequest();
+			xhr.open('GET', 'config.json', true);
+			xhr.onload = function(){
+				if (xhr.status == 200){
+					fn(JSON.parse(xhr.responseText));
+				} else {
+					fn({});
+				}
+			};
+			xhr.onerror = xhr.onabort = function(){
+				fn({});
+			};
+			xhr.send();
+		},
+		injectStylesheet: function(url){
+			var link = document.createElement('link');
+			link.rel = 'stylesheet';
+			link.href = url;
+			document.body.appendChild(link);
 		},
 		fetch: function(fn){
 			var xhr = new XMLHttpRequest();
@@ -219,9 +245,9 @@ h1{
 			html = '';
 			var days = 0;
 
-			for (var y=firstYear; y<=nowYear+1; y++){
+			for (var y=firstYear, age = 0; y<=nowYear+1; y++, age++){
 				html += '<section class="year" style="left: ' + (days*dayLength) + 'px">' +
-					y + ' (' + (y - firstYear) + ')' +
+					y + ' (' + age + ')' +
 					'</section>';
 				days += (y % 4 == 0) ? 366 : 365;
 			}
